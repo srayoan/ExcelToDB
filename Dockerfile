@@ -1,26 +1,30 @@
-FROM python:3.11-slim
+FROM python:3.10-slim
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    curl gnupg2 unixodbc-dev gcc g++ apt-transport-https software-properties-common \
+# Set environment variables to avoid prompts
+ENV ACCEPT_EULA=Y \
+    DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl gnupg2 apt-transport-https unixodbc-dev gcc g++ \
     && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
     && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
-    && apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
+    && apt-get update \
+    && apt-get install -y msodbcsql17 \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Create app directory
 WORKDIR /app
 
 # Copy app files
-COPY . /app
-
-# Install Python packages
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port
+COPY . .
+
+# Expose Flask port
 EXPOSE 5000
 
-# Run app
+# Run the app
 CMD ["python", "app.py"]
-
 
