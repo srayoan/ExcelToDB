@@ -1,30 +1,32 @@
-FROM python:3.10-slim
-
-# Set environment variables to avoid prompts
-ENV ACCEPT_EULA=Y \
-    DEBIAN_FRONTEND=noninteractive
+# Use an official Python image
+FROM python:3.9-slim-bullseye
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl gnupg2 apt-transport-https unixodbc-dev gcc g++ \
+RUN apt-get update && apt-get install -y \
+    curl gnupg2 unixodbc-dev gcc g++ apt-transport-https \
     && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-    && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && curl https://packages.microsoft.com/config/debian/11/prod.list \
+        -o /etc/apt/sources.list.d/mssql-release.list \
     && apt-get update \
-    && apt-get install -y msodbcsql17 \
-    && rm -rf /var/lib/apt/lists/*
+    && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
-# Copy app files
+# Copy requirement file
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
+# Install Python dependencies
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+# Copy the application code
 COPY . .
 
-# Expose Flask port
+# Expose port
 EXPOSE 5000
 
-# Run the app
+# Run the Flask app
 CMD ["python", "app.py"]
+
 
